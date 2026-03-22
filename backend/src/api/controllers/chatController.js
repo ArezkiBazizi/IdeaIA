@@ -15,7 +15,7 @@ export const chatController = {
       return reply.code(404).send({ error: 'Projet introuvable' });
     }
 
-    initSse(reply);
+    initSse(reply, request);
 
     try {
       await streamProjectChat({
@@ -27,7 +27,7 @@ export const chatController = {
       sseEnd(reply);
     } catch (err) {
       request.log.error(err);
-      sseError(reply, err.message ?? 'Erreur chat', 500);
+      sseError(reply, request, err.message ?? 'Erreur chat', 500);
     }
   },
 };

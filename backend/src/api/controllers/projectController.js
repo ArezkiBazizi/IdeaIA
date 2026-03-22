@@ -12,7 +12,7 @@ export const projectController = {
       return reply.code(400).send({ error: 'Champ "idea" (string) requis' });
     }
 
-    initSse(reply);
+    initSse(reply, request);
 
     try {
       const project = await generateAndPersistProject({
@@ -26,7 +26,7 @@ export const projectController = {
       sseEnd(reply);
     } catch (err) {
       request.log.error(err);
-      sseError(reply, err.message ?? 'Erreur génération', 500);
+      sseError(reply, request, err.message ?? 'Erreur génération', 500);
     }
   },
 
