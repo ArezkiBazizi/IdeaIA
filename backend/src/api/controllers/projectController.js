@@ -1,32 +1,34 @@
 /**
  * Contrôleur HTTP : mince couche entre transport Fastify et projectService (Clean Architecture).
+ * SSE via PassThrough + reply.send pour compatibilité CORS / navigateurs (évite réponse vide).
  */
 import { generateAndPersistProject } from '../../services/projectService.js';
 import { projectRepository } from '../../repository/projectRepository.js';
-import { initSse, sseWrite, sseEnd, sseError } from '../utils/sse.js';
-
+import { createSseReply } from '../utils/sseStream.js';
 export const projectController = {
   async generate(request, reply) {
-    const { idea, userId } = request.body ?? {};
+    const { idea, userId, responseLanguage } = request.body ?? {};
     if (!idea || typeof idea !== 'string') {
       return reply.code(400).send({ error: 'Champ "idea" (string) requis' });
     }
 
-    initSse(reply, request);
+    const { write, end } = createSseReply(reply, request);
 
     try {
       const project = await generateAndPersistProject({
         idea,
         userId: userId ?? undefined,
+        responseLanguage,
         onToken: (chunk) => {
-          sseWrite(reply, { type: 'token', text: chunk });
+          write({ type: 'token', text: chunk });
         },
       });
-      sseWrite(reply, { type: 'saved', projectId: project.id });
-      sseEnd(reply);
+      write({ type: 'saved', projectId: project.id });
+      end();
     } catch (err) {
       request.log.error(err);
-      sseError(reply, request, err.message ?? 'Erreur génération', 500);
+      write({ type: 'error', message: err.message ?? 'Erreur génération' });
+      end();
     }
   },
 

@@ -1,61 +1,86 @@
+/**
+ * Charte « Serenity & Focus » — Soft UI, respiration, contraste doux.
+ * Mode clair : fond papier ; mode sombre : Deep Blue (#0F172A).
+ */
 :root {
-  --bg: #0f1419;
-  --surface: #1a2332;
-  --text: #e7ecf3;
-  --muted: #8b9aad;
-  --border: #2d3a4d;
-  --accent: #5b9cff;
-  --ok: #4ade80;
-  --danger: #f87171;
+  --bg: #f8fafc;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-solid: #ffffff;
+  --text: #334155;
+  --text-muted: #64748b;
+  --accent: #6366f1;
+  --accent-soft: rgba(99, 102, 241, 0.12);
+  --success: #10b981;
+  --success-soft: rgba(16, 185, 129, 0.15);
+  --border: rgba(51, 65, 85, 0.1);
+  --shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  --shadow-glow: 0 8px 40px rgba(99, 102, 241, 0.18);
+  --radius: 24px;
+  --radius-full: 9999px;
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+[data-theme='dark'] {
+  --bg: #0f172a;
+  --surface: rgba(30, 41, 59, 0.65);
+  --surface-solid: #1e293b;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --accent: #818cf8;
+  --accent-soft: rgba(129, 140, 248, 0.15);
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.15);
+  --border: rgba(148, 163, 184, 0.12);
+  --shadow: 0 4px 32px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 12px 48px rgba(99, 102, 241, 0.25);
 }
 
 * {
   box-sizing: border-box;
 }
+
 html,
 body {
   margin: 0;
-  font-family:
-    system-ui,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  background: var(--bg);
+  min-height: 100%;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
   color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
 }
-code {
-  font-size: 0.85em;
-  background: var(--surface);
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-}
-.btn {
-  display: inline-block;
-  padding: 0.5rem 1rem;
-  background: var(--accent);
-  color: #0f1419;
-  border-radius: 8px;
-  text-decoration: none;
+
+h1,
+h2,
+h3,
+.brand-font {
+  font-family: var(--font-display);
   font-weight: 600;
-  border: none;
-  cursor: pointer;
-  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
-.btn:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.btn.ghost {
-  background: transparent;
+
+a {
   color: var(--accent);
-  border: 1px solid var(--border);
+  text-decoration: none;
 }
-.err {
-  color: var(--danger);
+a:hover {
+  text-decoration: underline;
 }
+
 .card {
   margin: 0 auto;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }

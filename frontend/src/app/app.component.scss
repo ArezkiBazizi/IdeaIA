@@ -3,37 +3,57 @@
   display: flex;
   flex-direction: column;
 }
+
 .top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  padding: 1rem 1.5rem;
+  flex-shrink: 0;
 }
+
 .brand {
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
   color: var(--text);
   text-decoration: none;
+  letter-spacing: -0.03em;
 }
-nav {
-  display: flex;
-  gap: 1rem;
-}
-nav a {
-  color: var(--muted);
+
+.brand:hover {
   text-decoration: none;
-  font-size: 0.95rem;
-}
-nav a:hover,
-nav a.active {
   color: var(--accent);
 }
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theme-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface-solid);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
+.theme-btn:hover {
+  box-shadow: var(--shadow);
+  transform: scale(1.04);
+}
+
 .main {
   flex: 1;
-  padding: 1.5rem 1.25rem 2rem;
+  width: 100%;
   max-width: 960px;
   margin: 0 auto;
-  width: 100%;
+  padding: 0 1.25rem 3rem;
 }

@@ -1,21 +1,73 @@
-<section class="card">
-  <h1>Idea-to-Action</h1>
-  <p class="muted">Front Angular connecté à l’API Fastify (backend).</p>
+<div class="void" [class.focus-mode]="focus">
+  @if (apiOk() === false) {
+    <p class="api-hint" role="status">Connexion API impossible — lance le backend (<code>cd backend && npm run dev</code>).</p>
+  }
 
-  @if (loading) {
-    <p>Vérification de l’API…</p>
-  }
-  @if (error) {
-    <p class="err">Impossible de joindre l’API : {{ error }}. Lance le backend (<code>cd backend && npm run dev</code>).</p>
-  }
-  @if (health) {
-    <div class="health">
-      <span [class.ok]="health.database === 'up'">{{ health.status }}</span>
-      · base : {{ health.database }} · {{ health.timestamp | date : 'short' }}
+  @if (phase() === 'void') {
+    <div class="void-inner">
+      <div
+        class="input-shell"
+        [class.is-focused]="focus"
+        [class.has-value]="idea.trim().length > 0"
+      >
+        <label class="sr-only" for="idea-main">Votre idée</label>
+        <textarea
+          id="idea-main"
+          name="idea"
+          [(ngModel)]="idea"
+          (focus)="focus = true"
+          (blur)="focus = false"
+          rows="5"
+          class="void-input"
+          autocomplete="off"
+        ></textarea>
+        <span class="void-placeholder brand-font">Quelle est votre prochaine grande idée ?</span>
+      </div>
+
+      <div class="lang-row">
+        <span class="lang-label">Langue du plan</span>
+        <div class="lang-seg" role="group" aria-label="Langue du plan généré">
+          @for (lang of responseLanguages; track lang.code) {
+            <button
+              type="button"
+              class="lang-pill"
+              [class.active]="responseLanguage === lang.code"
+              (click)="responseLanguage = lang.code"
+              [attr.aria-pressed]="responseLanguage === lang.code"
+            >
+              {{ lang.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <details class="opts">
+        <summary>Options (optionnel)</summary>
+        <label for="uid">User ID (UUID)</label>
+        <input id="uid" type="text" [(ngModel)]="userId" placeholder="Si vous avez créé un compte" />
+      </details>
+
+      <button type="button" class="btn-primary" (click)="submit()" [disabled]="apiOk() === false">
+        Générer le plan
+      </button>
     </div>
   }
 
-  <nav class="nav">
-    <a routerLink="/generate" class="btn">Générer un projet</a>
-  </nav>
-</section>
+  @if (phase() === 'generating') {
+    <div class="meta" aria-live="polite">
+      <div class="meta-orbs" aria-hidden="true">
+        <span class="orb orb-a"></span>
+        <span class="orb orb-b"></span>
+      </div>
+      <p class="meta-line brand-font">{{ loadingPhase() === 0 ? 'Analyse du concept…' : 'Structuration des étapes…' }}</p>
+      <p class="meta-sub">Transformation en cours</p>
+    </div>
+  }
+
+  @if (phase() === 'error' && error()) {
+    <div class="err-box">
+      <p>{{ error() }}</p>
+      <button type="button" class="btn-secondary" (click)="toVoid()">Revenir</button>
+    </div>
+  }
+</div>

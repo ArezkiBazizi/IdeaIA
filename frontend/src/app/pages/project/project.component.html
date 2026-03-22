@@ -1,58 +1,112 @@
-@if (loadError) {
-  <p class="err">{{ loadError }}</p>
-  <a routerLink="/">Retour</a>
+@if (loadError()) {
+  <div class="state-err">
+    <p>{{ loadError() }}</p>
+    <a routerLink="/" class="link-home">Retour au calme</a>
+  </div>
 }
 
-@if (project) {
-  <section class="card wide">
-    <header class="head">
-      <h1>{{ project.title }}</h1>
-      <a routerLink="/generate" class="btn ghost">Nouveau projet</a>
-    </header>
-    <p class="desc">{{ project.description }}</p>
-    <p class="muted small">ID : {{ project.id }}</p>
-
-    <h2>Phases & tâches</h2>
-    @for (ph of project.phases; track ph.id) {
-      <article class="phase">
-        <h3>{{ ph.title }}</h3>
-        <ul>
-          @for (t of ph.tasks; track t.id) {
-            <li>
-              <span class="badge" [class]="t.status">{{ t.status }}</span>
-              <strong>{{ t.title }}</strong>
-              <span class="muted">({{ t.estimatedTime }})</span>
-              <p class="tdesc">{{ t.description }}</p>
-              <div class="task-actions">
-                @for (s of statuses; track s) {
-                  <button
-                    type="button"
-                    class="mini"
-                    [disabled]="taskBusy[t.id] || t.status === s"
-                    (click)="setTaskStatus(t, s)"
-                  >
-                    {{ s }}
-                  </button>
-                }
-              </div>
-            </li>
-          }
-        </ul>
-      </article>
-    }
-
-    <h2>Chat (contexte projet)</h2>
-    <textarea [(ngModel)]="chatMessage" rows="3" placeholder="Pose une question sur ce projet…"></textarea>
-    <div class="actions">
-      <button type="button" class="btn" (click)="sendChat()" [disabled]="chatBusy || !chatMessage.trim()">
-        Envoyer
-      </button>
+@if (project(); as p) {
+  <div class="path">
+    <div class="progress-track" role="progressbar" [attr.aria-valuenow]="progress()" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-fill" [style.width.%]="progress()"></div>
     </div>
-    @if (chatError) {
-      <p class="err">{{ chatError }}</p>
+
+    <header class="path-head">
+      <a routerLink="/" class="back brand-font">← Accueil</a>
+      <h1 class="path-title brand-font">{{ p.title }}</h1>
+      <p class="path-desc">{{ p.description }}</p>
+    </header>
+
+    <div class="timeline">
+      @for (ph of p.phases; track ph.id; let pi = $index) {
+        <section class="phase-card">
+          <div class="timeline-node" aria-hidden="true"></div>
+          <div class="glass">
+            <h2 class="phase-title brand-font">{{ pi + 1 }}. {{ ph.title }}</h2>
+            <ul class="tasks">
+              @for (t of ph.tasks; track t.id) {
+                <li class="task-row" [class.done]="t.status === 'DONE'">
+                  <label class="check-wrap">
+                    <input
+                      type="checkbox"
+                      [checked]="t.status === 'DONE'"
+                      [disabled]="taskBusy[t.id]"
+                      (change)="onToggleTask(t)"
+                    />
+                    <span class="check-ui" aria-hidden="true"></span>
+                  </label>
+                  <div class="task-body">
+                    <span class="task-title">{{ t.title }}</span>
+                    <span class="task-meta">{{ t.estimatedTime }}</span>
+                    <p class="task-desc">{{ t.description }}</p>
+                    @if (t.status !== 'DONE' && t.status !== 'PENDING') {
+                      <span class="badge">{{ t.status }}</span>
+                    }
+                  </div>
+                  @if (confettiFor() === t.id) {
+                    <div class="confetti" aria-hidden="true">
+                      @for (c of [1, 2, 3, 4, 5, 6, 7, 8]; track c) {
+                        <span class="confetti-bit"></span>
+                      }
+                    </div>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        </section>
+      }
+    </div>
+  </div>
+
+  <!-- Copilot flottant -->
+  <div class="copilot" [class.hint-pulse]="copilotHint()">
+    <button
+      type="button"
+      class="copilot-fab"
+      (click)="toggleCopilot()"
+      [attr.aria-expanded]="copilotOpen()"
+      aria-label="Ouvrir le co-pilot"
+    >
+      {{ copilotOpen() ? '✕' : '✦' }}
+    </button>
+    @if (copilotHint() && !copilotOpen()) {
+      <p class="copilot-nudge brand-font">Besoin d’un conseil pour cette étape ?</p>
     }
-    @if (chatStream) {
-      <pre class="chat-out">{{ chatStream }}</pre>
+    @if (copilotOpen()) {
+      <div class="copilot-sheet">
+        <p class="copilot-lead">Le co-pilot — comme une note sur le bord de la feuille.</p>
+        <div class="lang-row copilot-lang">
+          <span class="lang-label">Langue de la réponse</span>
+          <div class="lang-seg" role="group" aria-label="Langue de la réponse du co-pilot">
+            @for (lang of responseLanguages; track lang.code) {
+              <button
+                type="button"
+                class="lang-pill"
+                [class.active]="responseLanguage === lang.code"
+                (click)="responseLanguage = lang.code"
+                [attr.aria-pressed]="responseLanguage === lang.code"
+              >
+                {{ lang.label }}
+              </button>
+            }
+          </div>
+        </div>
+        <textarea
+          [(ngModel)]="chatMessage"
+          rows="3"
+          placeholder="Posez une question…"
+        ></textarea>
+        <button type="button" class="btn-send" (click)="sendChat()" [disabled]="chatBusy || !chatMessage.trim()">
+          Envoyer
+        </button>
+        @if (chatError) {
+          <p class="err">{{ chatError }}</p>
+        }
+        @if (chatStream) {
+          <div class="copilot-reply">{{ chatStream }}</div>
+        }
+      </div>
     }
-  </section>
+  </div>
 }

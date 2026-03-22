@@ -54,25 +54,54 @@ export class ApiService {
       }
       throw new Error(msg);
     }
+    if (res.status === 204 || res.status === 205) {
+      throw new Error(
+        `Réponse HTTP ${res.status} (sans corps) — vérifie que l’API tourne sur ${this.base} et que la route POST /api/projects/generate renvoie bien un flux SSE (pas une requête OPTIONS confondue avec le POST dans l’onglet Réseau).`,
+      );
+    }
     const reader = res.body?.getReader();
-    if (!reader) throw new Error('Réponse sans corps');
+    if (!reader) {
+      throw new Error(
+        `Réponse sans corps lisible (HTTP ${res.status}). Souvent une requête OPTIONS (prévol) affiche 204 : sélectionne bien la ligne POST dans l’onglet Réseau.`,
+      );
+    }
     const decoder = new TextDecoder();
     let buffer = '';
+
+    const parseLine = (line: string): boolean => {
+      const trimmed = line.replace(/\r$/, '').trim();
+      if (!trimmed.startsWith('data:')) return false;
+      const raw = trimmed.replace(/^data:\s*/, '').trim();
+      if (raw === '[DONE]') return true;
+      let payload: SsePayload;
+      try {
+        payload = JSON.parse(raw) as SsePayload;
+      } catch {
+        return false;
+      }
+      if (payload.type === 'error') {
+        const msg = 'message' in payload ? String(payload.message) : 'Erreur serveur';
+        throw new Error(msg);
+      }
+      onEvent(payload);
+      return false;
+    };
+
     for (;;) {
       const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        const raw = line.replace(/^data:\s*/, '').trim();
-        if (raw === '[DONE]') return;
-        try {
-          onEvent(JSON.parse(raw) as SsePayload);
-        } catch {
-          /* ligne partielle */
+      if (value) buffer += decoder.decode(value, { stream: true });
+      if (!done) {
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (parseLine(line)) return;
         }
+      } else {
+        const lines = buffer.split(/\r?\n/);
+        for (const line of lines) {
+          if (parseLine(line)) return;
+        }
+        return;
       }
     }
   }

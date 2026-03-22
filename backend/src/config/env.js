@@ -14,8 +14,8 @@ const envSchema = z.object({
   NVIDIA_API_KEY: z.string().min(1, 'NVIDIA_API_KEY est requis'),
   /** Base OpenAI-compatible NVIDIA NIM (Build) */
   NVIDIA_API_BASE_URL: z.string().url().default('https://integrate.api.nvidia.com/v1'),
-  /** Modèle NVIDIA Build — surchargeable sans toucher au code */
-  NVIDIA_MODEL: z.string().default('nvidia/build-autogen-18'),
+  /** ID modèle NIM (catalogue : https://build.nvidia.com — ex. meta/llama3-8b-instruct) */
+  NVIDIA_MODEL: z.string().default('meta/llama3-8b-instruct'),
   /** Nombre de tentatives HTTP côté client NVIDIA */
   NVIDIA_MAX_RETRIES: z.coerce.number().min(1).max(10).default(3),
 });

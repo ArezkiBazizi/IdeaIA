@@ -3,6 +3,10 @@
  * (pas d'embeddings — suffisant pour un MVP premium et prévisible).
  */
 import { streamChatCompletion } from './nvidiaService.js';
+import {
+  chatLanguageInstruction,
+  normalizeResponseLanguage,
+} from '../utils/responseLanguage.js';
 
 function projectToContextBlock(project) {
   const lines = [
@@ -23,12 +27,19 @@ function projectToContextBlock(project) {
 const CHAT_SYSTEM = `Tu es un coach de mise en œuvre pour le projet décrit ci-dessous. Réponds de façon concise et actionnable. Tu peux proposer des sous-tâches ou clarifier les risques.`;
 
 /** @param {object} project — enregistrement Prisma avec phases et tâches (chargé en amont). */
-export async function streamProjectChat({ project, userMessage, onChunk }) {
+export async function streamProjectChat({
+  project,
+  userMessage,
+  onChunk,
+  responseLanguage,
+}) {
+  const lang = normalizeResponseLanguage(responseLanguage);
+  const langLine = chatLanguageInstruction(lang);
   const context = projectToContextBlock(project);
   const messages = [
     {
       role: 'system',
-      content: `${CHAT_SYSTEM}\n\n--- Contexte projet ---\n${context}`,
+      content: `${CHAT_SYSTEM}\n${langLine}\n\n--- Contexte projet ---\n${context}`,
     },
     { role: 'user', content: userMessage },
   ];

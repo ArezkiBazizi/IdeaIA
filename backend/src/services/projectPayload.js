@@ -3,19 +3,23 @@
  */
 import { z } from 'zod';
 
+const str = z.preprocess((v) => (v == null || v === '' ? '' : String(v)), z.string());
+
 export const projectPayloadSchema = z.object({
-  title: z.string().min(1),
-  description: z.string(),
+  title: z.preprocess((v) => String(v ?? '').trim(), z.string().min(1)),
+  description: str,
   phases: z.array(
     z.object({
-      title: z.string().min(1),
-      tasks: z.array(
-        z.object({
-          title: z.string().min(1),
-          description: z.string().default(''),
-          estimatedTime: z.string().default('—'),
-        }),
-      ),
+      title: z.preprocess((v) => String(v ?? '').trim(), z.string().min(1)),
+      tasks: z
+        .array(
+          z.object({
+            title: z.preprocess((v) => String(v ?? '').trim(), z.string().min(1)),
+            description: str.default(''),
+            estimatedTime: str.default('—'),
+          }),
+        )
+        .default([]),
     }),
   ),
 });

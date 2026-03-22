@@ -33,7 +33,7 @@ services:
       DATABASE_URL: postgresql://idea:idea@db:5432/ideatoaction
       NVIDIA_API_KEY: ${NVIDIA_API_KEY:?Définir NVIDIA_API_KEY dans l'environnement ou un fichier .env}
       NVIDIA_API_BASE_URL: ${NVIDIA_API_BASE_URL:-https://integrate.api.nvidia.com/v1}
-      NVIDIA_MODEL: ${NVIDIA_MODEL:-nvidia/build-autogen-18}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-meta/llama3-8b-instruct}
     depends_on:
       db:
         condition: service_healthy

@@ -8,6 +8,43 @@ import { loadEnv } from '../config/env.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * URL complète POST /v1/chat/completions — ajoute /v1 si la base est l’hôte seul (évite 404).
+ */
+export function resolveNvidiaChatCompletionsUrl(baseUrl) {
+  let b = baseUrl.replace(/\/$/, '');
+  if (!/\/v1$/i.test(b)) {
+    b = `${b}/v1`;
+  }
+  return `${b}/chat/completions`;
+}
+
+/** Fenêtre de contexte (tokens) — alignée sur les modèles 8k NIM courants. */
+const DEFAULT_CONTEXT_WINDOW = 8192;
+const COMPLETION_HEADROOM = 48;
+
+/**
+ * Estimation prudente des tokens d’entrée (évite 400 si max_tokens + prompt > contexte).
+ */
+function estimateInputTokens(messages) {
+  if (!messages?.length) return 64;
+  let chars = 0;
+  for (const m of messages) {
+    const c = typeof m.content === 'string' ? m.content : JSON.stringify(m.content ?? '');
+    chars += c.length;
+  }
+  return Math.ceil(chars / 3) + messages.length * 8;
+}
+
+/**
+ * Plafonne max_completion pour que prompt + complétion ne dépassent pas la fenêtre.
+ */
+function capCompletionTokens(messages, requestedMax, contextWindow = DEFAULT_CONTEXT_WINDOW) {
+  const input = estimateInputTokens(messages);
+  const room = contextWindow - input - COMPLETION_HEADROOM;
+  return Math.max(1, Math.min(requestedMax, room));
+}
+
 function buildHeaders() {
   const { NVIDIA_API_KEY } = loadEnv();
   return {
@@ -70,14 +107,15 @@ function parseSseLine(line) {
 export async function streamChatCompletion(messages, handlers = {}) {
   const env = loadEnv();
   const { onChunk, signal } = handlers;
-  const url = `${env.NVIDIA_API_BASE_URL.replace(/\/$/, '')}/chat/completions`;
+  const url = resolveNvidiaChatCompletionsUrl(env.NVIDIA_API_BASE_URL);
 
+  const maxTokens = capCompletionTokens(messages, 8192);
   const body = JSON.stringify({
     model: env.NVIDIA_MODEL,
     messages,
     stream: true,
     temperature: 0.3,
-    max_tokens: 8192,
+    max_tokens: maxTokens,
   });
 
   const res = await fetchWithRetry(
@@ -93,7 +131,11 @@ export async function streamChatCompletion(messages, handlers = {}) {
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
-    throw new Error(`NVIDIA API ${res.status}: ${errText.slice(0, 500)}`);
+    const hint404 =
+      res.status === 404
+        ? ' Vérifie NVIDIA_MODEL : format « editeur/nom » (ex. meta/llama3-8b-instruct) copié depuis la fiche modèle sur https://build.nvidia.com — pas un libellé du type « NVIDIABuild-Autogen-18 ». Vérifie aussi NVIDIA_API_BASE_URL (doit finir par …/v1).'
+        : '';
+    throw new Error(`NVIDIA API ${res.status}: ${errText.slice(0, 500)}${hint404}`);
   }
 
   const reader = res.body?.getReader();
@@ -128,13 +170,15 @@ export async function streamChatCompletion(messages, handlers = {}) {
  */
 export async function completeChat(messages, options = {}) {
   const env = loadEnv();
-  const url = `${env.NVIDIA_API_BASE_URL.replace(/\/$/, '')}/chat/completions`;
+  const url = resolveNvidiaChatCompletionsUrl(env.NVIDIA_API_BASE_URL);
+  const requestedMax = options.max_tokens ?? 4096;
+  const maxTokens = capCompletionTokens(messages, requestedMax);
   const body = JSON.stringify({
     model: env.NVIDIA_MODEL,
     messages,
     stream: false,
     temperature: options.temperature ?? 0.2,
-    max_tokens: options.max_tokens ?? 4096,
+    max_tokens: maxTokens,
   });
 
   const res = await fetchWithRetry(
@@ -153,7 +197,11 @@ export async function completeChat(messages, options = {}) {
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
-    throw new Error(`NVIDIA API ${res.status}: ${errText.slice(0, 500)}`);
+    const hint404 =
+      res.status === 404
+        ? ' Vérifie NVIDIA_MODEL (format editeur/nom sur https://build.nvidia.com) et NVIDIA_API_BASE_URL (…/v1).'
+        : '';
+    throw new Error(`NVIDIA API ${res.status}: ${errText.slice(0, 500)}${hint404}`);
   }
 
   const json = await res.json();
