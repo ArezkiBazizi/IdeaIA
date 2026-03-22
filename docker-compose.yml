@@ -1,0 +1,42 @@
+# Stack locale : API + PostgreSQL + healthchecks pour un démarrage fiable (depends_on conditionnel).
+# APP_IMAGE permet de surcharger l'image en prod (ex: ghcr.io/org/idea-to-action:latest) après pull CI.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: idea
+      POSTGRES_PASSWORD: idea
+      POSTGRES_DB: ideatoaction
+    # Port 5433 sur l'hôte : évite le conflit avec un PostgreSQL Windows déjà installé sur 5432.
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idea -d ideatoaction"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: ${APP_IMAGE:-idea-to-action:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://idea:idea@db:5432/ideatoaction
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:?Définir NVIDIA_API_KEY dans l'environnement ou un fichier .env}
+      NVIDIA_API_BASE_URL: ${NVIDIA_API_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-nvidia/build-autogen-18}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

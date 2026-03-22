@@ -1,0 +1,7 @@
+# Copier vers terraform.tfvars (non versionné) et renseigner les valeurs.
+do_token     = "REPLACE_ME"
+region       = "fra1"
+droplet_name = "idea-to-action"
+ssh_key_ids  = ["12345678"]
+# Exemple de restriction SSH :
+# admin_cidrs = ["203.0.113.10/32"]

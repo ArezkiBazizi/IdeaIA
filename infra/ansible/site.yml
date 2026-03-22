@@ -1,0 +1,8 @@
+---
+# Playbook principal : durcissement + Docker (séparation des rôles pour réutilisabilité).
+- name: Préparer le serveur Idea-to-Action
+  hosts: all
+  become: true
+  roles:
+    - security
+    - docker

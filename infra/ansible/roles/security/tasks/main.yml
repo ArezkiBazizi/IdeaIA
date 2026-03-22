@@ -1,0 +1,42 @@
+---
+# Rôle security : surface d'attaque réduite (UFW) + bannissement automatique (fail2ban).
+# UFW est stateful et simple à auditer ; fail2ban protège sshd contre le bruteforce.
+
+- name: Installer paquets pare-feu et surveillance
+  ansible.builtin.apt:
+    name:
+      - ufw
+      - fail2ban
+    state: present
+    update_cache: true
+
+- name: Configurer UFW (SSH/HTTP/HTTPS puis activation)
+  ansible.builtin.shell: |
+    set -e
+    ufw --force reset
+    ufw default deny incoming
+    ufw default allow outgoing
+    ufw allow 22/tcp
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    ufw --force enable
+  changed_when: true
+
+- name: Déployer jail fail2ban pour sshd
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.local
+    mode: "0644"
+    content: |
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 5
+      bantime = 1h
+
+- name: Redémarrer fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+    enabled: true
